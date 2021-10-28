@@ -1,0 +1,13 @@
+﻿Installerer assemblyen 'C:\Projects\.NET\Uddataplus\Uddataplus\bin\Debug\Uddataplus.exe'.
+De berørte parametre er:
+   logtoconsole = 
+   logfile = C:\Projects\.NET\Uddataplus\Uddataplus\bin\Debug\Uddataplus.InstallLog
+   assemblypath = C:\Projects\.NET\Uddataplus\Uddataplus\bin\Debug\Uddataplus.exe
+Der blev ikke fundet nogen offentlige installationsprogrammer med attributten RunInstallerAttribute.Yes i assemblyen C:\Projects\.NET\Uddataplus\Uddataplus\bin\Debug\Uddataplus.exe.
+Bekræfter assemblyen 'C:\Projects\.NET\Uddataplus\Uddataplus\bin\Debug\Uddataplus.exe'.
+De berørte parametre er:
+   logtoconsole = 
+   logfile = C:\Projects\.NET\Uddataplus\Uddataplus\bin\Debug\Uddataplus.InstallLog
+   assemblypath = C:\Projects\.NET\Uddataplus\Uddataplus\bin\Debug\Uddataplus.exe
+Der blev ikke fundet nogen offentlige installationsprogrammer med attributten RunInstallerAttribute.Yes i assemblyen C:\Projects\.NET\Uddataplus\Uddataplus\bin\Debug\Uddataplus.exe.
+Fjerner filen InstallState, da der ikke er nogen installationsprogrammer.
