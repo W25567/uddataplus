@@ -9,6 +9,7 @@ Public Class Helper
         hold = 3
         tilstededage = 4
         test_login = 5
+        skoledage = 6
     End Enum
 
     Public cnnString = "Data Source=AMUS-APP\AMUS_KVICHSYS;Initial Catalog=uddataplus;Integrated Security=True"
@@ -44,11 +45,15 @@ Public Class Helper
             Case url.hold : adresse = config.url_hold.Replace("[akti_id]", akti_id)
             Case url.tilstededage : adresse = config.url_tilstededage.Replace("[akti_id]", akti_id)
             Case url.test_login : adresse = config.url_test_login
+            Case url.skoledage : adresse = config.url_skoledage.Replace("[skka_id]", akti_id)
         End Select
         Console.WriteLine(adresse)
+
         Dim wc As New WebClient
         wc.Encoding = Encoding.UTF8
         wc.Headers.Add("cookie", config.jsession)
+        wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:93.0) Gecko/20100101 Firefox/93.0")
+
         Dim s As String = wc.DownloadString(adresse)
         Console.WriteLine(config.jsession)
         'Console.WriteLine(s)
@@ -85,9 +90,11 @@ Public Class Helper
         cnn.ConnectionString = cnnString
         Using cmd As New SqlClient.SqlCommand(command, cnn)
             cmd.CommandTimeout = 3600
-            For Each par As SqlClient.SqlParameter In params
-                cmd.Parameters.Add(par)
-            Next
+            If Not params Is Nothing Then
+                For Each par As SqlClient.SqlParameter In params
+                    cmd.Parameters.Add(par)
+                Next
+            End If
             cmd.Connection.Open()
             cmd.ExecuteNonQuery()
             cmd.Parameters.Clear()

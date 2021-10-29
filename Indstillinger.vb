@@ -9,6 +9,7 @@ Public Class Indstillinger
     Public url_hold As String
     Public url_tilstededage As String
     Public url_test_login As String
+    Public url_skoledage As String
     Public sleep As Integer
     Public start_antal_dage As Integer
     Public slut_antal_mdr As Integer
@@ -25,6 +26,7 @@ Public Class Indstillinger
         url_hold = dt.Rows(0)("url_hold")
         url_tilstededage = dt.Rows(0)("url_tilstededage")
         url_test_login = dt.Rows(0)("url_test_login")
+        url_skoledage = dt.Rows(0)("url_skoledage")
         sleep = dt.Rows(0)("sleep")
         start_antal_dage = dt.Rows(0)("start_antal_dage")
         slut_antal_mdr = dt.Rows(0)("slut_antal_mdr")

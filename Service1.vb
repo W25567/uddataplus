@@ -3,6 +3,7 @@ Imports System.Net
 Imports System.Management.Automation.Runspaces
 Imports System.Management.Automation
 Imports System.Collections.ObjectModel
+Imports System.Data.SqlClient
 
 Public Class Service1
 
@@ -31,18 +32,25 @@ Public Class Service1
     Public running As Boolean
 
     Sub Startkontrol()
-
         help.config = New Indstillinger(help.HentIndstillinger)
         ticker.Interval = help.config.timer_interval
         If Not running Then
-            Dim korsel_id As Integer = help.HentData("EXEC startkontrol", Nothing).Rows(0)(0)
+            Dim dt As DataTable = help.HentData("EXEC startkontrol", Nothing)
+            Dim korsel_id As Integer = dt.Rows(0)(0)
+            Dim korselstype As String = dt.Rows(0)(1).ToString
             Console.WriteLine("Korsel id: " & korsel_id)
-            If korsel_id > 0 Then Synkroniser(korsel_id)
+            If korsel_id > 0 Then
+                'If Not korselstype = "3" Then
+                Synkroniser(korsel_id, korselstype)
+                'Else
+                ' Synkroniser skoledage
+                'End If
+            End If
         End If
 
     End Sub
 
-    Sub Synkroniser(korsel_id As Integer)
+    Sub Synkroniser(korsel_id As Integer, korselstype As String)
 
         running = True
         Dim par As New SqlClient.SqlParameter("@korsel_id", korsel_id)
@@ -52,7 +60,7 @@ Public Class Service1
             firstRun = True
             If LoginIsValid(korsel_id) Then
                 help.ExecQuery("UPDATE program_korsler SET korer = 1, [status] = 'Synkroniserer nu...', starttidspunkt = GETDATE() WHERE korsel_id = @korsel_id", par)
-                DownloadHoldListe(korsel_id)
+                If korselstype = "3" Then DownloadSkoledage(korsel_id) Else DownloadHoldListe(korsel_id)
                 help.ExecQuery("UPDATE program_korsler SET korer = 0, [status] = 'OK', sluttidspunkt = GETDATE() WHERE korsel_id = @korsel_id", par)
             Else
                 help.ExecQuery("UPDATE program_korsler SET [status] = 'Udsat til næste tick' WHERE korsel_id = @korsel_id", par)
@@ -63,6 +71,27 @@ Public Class Service1
             help.WriteLog(korsel_id, ex.Message, ex.StackTrace)
         End Try
         running = False
+
+    End Sub
+
+    Sub DownloadSkoledage(korsel_id As Integer)
+
+        Dim skoledagskalendere As DataTable = help.HentData("SELECT * FROM skoledagskalendere", Nothing)
+        help.ExecQuery("EXEC create_skoledag_sequence", Nothing)
+
+        For Each row As DataRow In skoledagskalendere.Rows
+
+            Console.WriteLine("Synkroniserer skoledagskalender '" & row("skoledagskalender").ToString & "' med skka_id = " & row("skka_id"))
+
+            Dim p1 As New SqlParameter("@SKKA_ID", row("skka_id"))
+            Dim p2 As New SqlParameter("@JSON", help.HentJson(Helper.url.skoledage, row("skka_id")))
+
+            help.ExecQuery("EXEC sync_skoledage @SKKA_ID, @JSON", p1, p2)
+
+            Console.WriteLine("Sov " & help.config.sleep)
+            Threading.Thread.Sleep(help.config.sleep)
+
+        Next
 
     End Sub
 
