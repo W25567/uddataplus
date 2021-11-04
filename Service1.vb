@@ -40,11 +40,7 @@ Public Class Service1
             Dim korselstype As String = dt.Rows(0)(1).ToString
             Console.WriteLine("Korsel id: " & korsel_id)
             If korsel_id > 0 Then
-                'If Not korselstype = "3" Then
                 Synkroniser(korsel_id, korselstype)
-                'Else
-                ' Synkroniser skoledage
-                'End If
             End If
         End If
 
@@ -60,7 +56,13 @@ Public Class Service1
             firstRun = True
             If LoginIsValid(korsel_id) Then
                 help.ExecQuery("UPDATE program_korsler SET korer = 1, [status] = 'Synkroniserer nu...', starttidspunkt = GETDATE() WHERE korsel_id = @korsel_id", par)
-                If korselstype = "3" Then DownloadSkoledage(korsel_id) Else DownloadHoldListe(korsel_id)
+                If korselstype = "3" Then
+                    DownloadSkoledage(korsel_id)
+                ElseIf korselstype = "4" Then
+                    DownloadHoldListe(korsel_id, False)
+                Else
+                    DownloadHoldListe(korsel_id)
+                End If
                 help.ExecQuery("UPDATE program_korsler SET korer = 0, [status] = 'OK', sluttidspunkt = GETDATE() WHERE korsel_id = @korsel_id", par)
             Else
                 help.ExecQuery("UPDATE program_korsler SET [status] = 'Udsat til næste tick' WHERE korsel_id = @korsel_id", par)
@@ -69,6 +71,7 @@ Public Class Service1
         Catch ex As Exception
             help.ExecQuery("UPDATE program_korsler SET korer = 0, [status] = 'Fejlet - <a href=""/log?korsel=" & korsel_id & """>se log</a>', sluttidspunkt = GETDATE() WHERE korsel_id = @korsel_id", par)
             help.WriteLog(korsel_id, ex.Message, ex.StackTrace)
+            Throw ex
         End Try
         running = False
 
@@ -95,19 +98,22 @@ Public Class Service1
 
     End Sub
 
-    Sub DownloadHoldListe(korsel_id As Integer)
+    Sub DownloadHoldListe(korsel_id As Integer, Optional SynkHold As Boolean = True)
 
-        Dim json As String = help.HentJson(Helper.url.holdliste)
-        help.SendJson("EXEC sync_hold @json", json)
+        If SynkHold Then
+            Dim json As String = help.HentJson(Helper.url.holdliste)
+            help.SendJson("EXEC sync_hold @json", json)
+        End If
 
+        Dim cnt As Integer = 0
         Dim dt As DataTable = help.HentData("SELECT * FROM program_sync ORDER BY prioritet", Nothing)
         help.WriteLog(korsel_id, "Synkroniserer " & dt.Rows.Count & " hold", "")
         Console.WriteLine("Synkroniserer " & dt.Rows.Count & " hold")
         For Each row As DataRow In dt.Rows
-
+            cnt += 1
             Try
 
-                DownloadHold(row("akti_id"))
+                DownloadHold(row("akti_id"), dt.Rows.Count, cnt)
                 DownloadTilstededage(row("akti_id"))
 
                 ' Fjern sync anmodningen
@@ -127,9 +133,9 @@ Public Class Service1
 
     End Sub
 
-    Sub DownloadHold(akti_id As Integer)
+    Sub DownloadHold(akti_id As Integer, antal As Integer, cnt As Integer)
 
-        Console.WriteLine("Downloader hold " & akti_id)
+        Console.WriteLine("Downloader hold " & akti_id & "(" & cnt & " / " & antal & ")")
 
         Dim json As String = help.HentJson(Helper.url.hold, akti_id)
 

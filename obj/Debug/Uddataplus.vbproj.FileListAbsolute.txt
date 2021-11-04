@@ -45,3 +45,11 @@ C:\Users\tkv.amus\Desktop\Uddataplus\obj\Debug\Uddataplus.vbproj.CoreCompileInpu
 C:\Users\tkv.amus\Desktop\Uddataplus\obj\Debug\Uddataplus.exe
 C:\Users\tkv.amus\Desktop\Uddataplus\obj\Debug\Uddataplus.xml
 C:\Users\tkv.amus\Desktop\Uddataplus\obj\Debug\Uddataplus.pdb
+C:\Users\tkv.amus\Desktop\Uddataplus\bin\Debug\Uddataplus.exe.manifest
+C:\Users\tkv.amus\Desktop\Uddataplus\bin\Debug\Uddataplus.application
+C:\Users\tkv.amus\Desktop\Uddataplus\obj\Debug\Uddataplus.exe.manifest
+C:\Users\tkv.amus\Desktop\Uddataplus\obj\Debug\Uddataplus.application
+C:\Users\tkv.amus\Desktop\Uddataplus\obj\Debug\Uddataplus.ProjectInstaller.resources
+C:\Users\tkv.amus\Desktop\Uddataplus\bin\Debug\ICSharpCode.SharpZipLib.dll
+C:\Users\tkv.amus\Desktop\Uddataplus\bin\Debug\ICSharpCode.SharpZipLib.pdb
+C:\Users\tkv.amus\Desktop\Uddataplus\bin\Debug\ICSharpCode.SharpZipLib.xml
