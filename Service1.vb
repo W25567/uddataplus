@@ -13,6 +13,8 @@ Public Class Service1
 
     Protected Overrides Sub OnStart(ByVal args() As String)
 
+        help.WriteStatus("Starter service...")
+
         ticker.Enabled = True
 
         AddHandler ticker.Elapsed, AddressOf Startkontrol
@@ -21,12 +23,16 @@ Public Class Service1
     End Sub
 
     Protected Overrides Sub OnStop()
+        help.WriteStatus("Stopper service...")
         ticker.Stop()
     End Sub
 
     Public running As Boolean
 
     Sub Startkontrol()
+
+        help.WriteStatus("Afventer næste kørsel")
+
         help.config = New Indstillinger(help.HentIndstillinger)
         ticker.Interval = help.config.timer_interval
         If Not running Then
@@ -44,6 +50,8 @@ Public Class Service1
     Sub Synkroniser(korsel_id As Integer, korselstype As String)
 
         running = True
+        help.WriteStatus("Synkroniserer nu")
+
         Dim par As New SqlClient.SqlParameter("@korsel_id", korsel_id)
 
         Try
@@ -69,6 +77,7 @@ Public Class Service1
             Throw ex
         End Try
         running = False
+        help.WriteStatus("Afventer næste kørsel")
 
     End Sub
 
@@ -163,14 +172,20 @@ Public Class Service1
             'psi.WorkingDirectory = Application.StartupPath
             psi.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
             psi.RedirectStandardOutput = True
+            psi.RedirectStandardError = True
             psi.Verb = "runas"
 
-            Dim p As Process
-            p = Process.Start(psi)
+            Dim p As New Process
+            p.StartInfo = psi
+            p.EnableRaisingEvents = True
+
+            AddHandler p.OutputDataReceived, AddressOf StdOut
+            AddHandler p.ErrorDataReceived, AddressOf StdOut
+
+            p.Start()
             p.BeginOutputReadLine()
-            While Not p.StandardOutput.EndOfStream
-                Console.WriteLine(p.StandardOutput.ReadLine)
-            End While
+            p.BeginErrorReadLine()
+
             p.WaitForExit()
 
             ' Vent 10 sekunder og prøv igen
@@ -183,5 +198,9 @@ Public Class Service1
         End If
 
     End Function
+
+    Sub StdOut(sender As Object, e As System.Diagnostics.DataReceivedEventArgs)
+        Console.WriteLine(e.Data)
+    End Sub
 
 End Class

@@ -20,7 +20,7 @@ Partial Class Service1
     <MTAThread()>
     <System.Diagnostics.DebuggerNonUserCode()>
     Shared Sub Main()
-        Dim debug As Boolean = True
+        Dim debug As Boolean = False
 
         If debug Then
             Dim myService As Service1 = New Service1()

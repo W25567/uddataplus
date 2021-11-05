@@ -170,6 +170,14 @@ Public Class Helper
         ExecQuery(sql, par0, par1, par2)
     End Sub
 
+    Public Sub WriteStatus(status As String)
+        Console.WriteLine("STATUS: " & status)
+        Dim par0 As New SqlClient.SqlParameter("@STATUS", status)
+        Dim sql As String = "EXEC update_robotstatus @STATUS"
+        ExecQuery(sql, par0)
+    End Sub
+
+
     Public Sub ExecQuery(command As String, ParamArray params() As SqlClient.SqlParameter)
 
         Dim cnn As New SqlClient.SqlConnection
