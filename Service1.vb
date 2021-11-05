@@ -1,12 +1,7 @@
-﻿Imports System.Configuration
-Imports System.Net
-Imports System.Management.Automation.Runspaces
-Imports System.Management.Automation
-Imports System.Collections.ObjectModel
+﻿Imports System.Net
 Imports System.Data.SqlClient
 
 Public Class Service1
-
     Public Sub OnDebug()
         OnStart(Nothing)
     End Sub
@@ -158,18 +153,28 @@ Public Class Service1
         Dim res As HttpWebResponse = DirectCast(req.GetResponse(), HttpWebResponse)
 
         If InStr(res.Headers.Get("Set-Cookie"), "JSESSIONIDSSO=REMOVE") > 0 Then
-            help.WriteLog(korsel_id, "Session cookie er udløbet. Udsætter start med 10 sekunder", "")
+            help.WriteLog(korsel_id, "Session cookie er udløbet", "")
 
-            Dim pShellRunSpace As Runspace = RunspaceFactory.CreateRunspace()
-            pShellRunSpace.Open()
+            Dim cmd As String = "powershell -executionpolicy bypass ""C:\Uplus\login.ps1"""
 
-            Dim pShellPipeline As Pipeline = pShellRunSpace.CreatePipeline()
-            pShellPipeline.Commands.AddScript(My.Settings.login_script)
+            Dim psi As New ProcessStartInfo("cmd.exe", cmd)
+            psi.UseShellExecute = False
+            psi.CreateNoWindow = True
+            'psi.WorkingDirectory = Application.StartupPath
+            psi.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+            psi.RedirectStandardOutput = True
+            psi.Verb = "runas"
 
-            Dim pShellResults As Collection(Of PSObject) = pShellPipeline.Invoke()
-            pShellRunSpace.Close()
+            Dim p As Process
+            p = Process.Start(psi)
+            p.BeginOutputReadLine()
+            While Not p.StandardOutput.EndOfStream
+                Console.WriteLine(p.StandardOutput.ReadLine)
+            End While
+            p.WaitForExit()
 
-            ' Vent 5 sekunder og prøv igen
+            ' Vent 10 sekunder og prøv igen
+            help.WriteLog(korsel_id, "Session cookie er hentet. Udsætter start med 10 sekunder", "")
             ticker.Interval = 10000
 
             Return False

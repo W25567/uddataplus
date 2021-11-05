@@ -34,10 +34,6 @@ C:\Users\tkv.amus\Desktop\Uddataplus\bin\Debug\Uddataplus.exe.config
 C:\Users\tkv.amus\Desktop\Uddataplus\bin\Debug\Uddataplus.exe
 C:\Users\tkv.amus\Desktop\Uddataplus\bin\Debug\Uddataplus.pdb
 C:\Users\tkv.amus\Desktop\Uddataplus\bin\Debug\Uddataplus.xml
-C:\Users\tkv.amus\Desktop\Uddataplus\bin\Debug\Cake.Powershell.dll
-C:\Users\tkv.amus\Desktop\Uddataplus\bin\Debug\System.Management.Automation.dll
-C:\Users\tkv.amus\Desktop\Uddataplus\bin\Debug\Cake.Powershell.pdb
-C:\Users\tkv.amus\Desktop\Uddataplus\bin\Debug\Cake.Powershell.xml
 C:\Users\tkv.amus\Desktop\Uddataplus\obj\Debug\Uddataplus.vbproj.AssemblyReference.cache
 C:\Users\tkv.amus\Desktop\Uddataplus\obj\Debug\Uddataplus.Resources.resources
 C:\Users\tkv.amus\Desktop\Uddataplus\obj\Debug\Uddataplus.vbproj.GenerateResource.cache
