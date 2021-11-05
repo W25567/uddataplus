@@ -110,11 +110,13 @@ Public Class Service1
         End If
 
         Dim cnt As Integer = 0
+        Dim tjekcnt As Integer = 0
         Dim dt As DataTable = help.HentData("SELECT * FROM program_sync ORDER BY prioritet", Nothing)
         help.WriteLog(korsel_id, "Synkroniserer " & dt.Rows.Count & " hold", "")
         Console.WriteLine("Synkroniserer " & dt.Rows.Count & " hold")
         For Each row As DataRow In dt.Rows
             cnt += 1
+            tjekcnt += 1
             Try
 
                 DownloadHold(row("akti_id"), dt.Rows.Count, cnt)
@@ -131,6 +133,13 @@ Public Class Service1
 
             Console.WriteLine("Sov " & help.config.sleep)
             Threading.Thread.Sleep(help.config.sleep)
+
+            If help.HentData("EXEC get_korselsstatus @KORSEL_ID", New SqlParameter("@KORSEL_ID", korsel_id)).Rows(0)(0) = 1 Then
+                tjekcnt = 0
+            Else
+                help.WriteLog(korsel_id, "Stopper synkroniseringen, da jobbet er annulleret udefra", cnt & " af " & dt.Rows.Count & " hold blev synkroniseret")
+                Exit For
+            End If
         Next
 
         help.ExecQuery("EXEC sync_housekeeping @korsel_id", New SqlClient.SqlParameter("@korsel_id", korsel_id))
