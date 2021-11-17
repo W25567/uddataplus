@@ -134,11 +134,13 @@ Public Class Service1
             Console.WriteLine("Sov " & help.config.sleep)
             Threading.Thread.Sleep(help.config.sleep)
 
-            If help.HentData("EXEC get_korselsstatus @KORSEL_ID", New SqlParameter("@KORSEL_ID", korsel_id)).Rows(0)(0) = 1 Then
-                tjekcnt = 0
-            Else
-                help.WriteLog(korsel_id, "Stopper synkroniseringen, da jobbet er annulleret udefra", cnt & " af " & dt.Rows.Count & " hold blev synkroniseret")
-                Exit For
+            If tjekcnt > 10 Then
+                If help.HentData("EXEC get_korselsstatus @KORSEL_ID", New SqlParameter("@KORSEL_ID", korsel_id)).Rows(0)(0) = 1 Then
+                    tjekcnt = 0
+                Else
+                    help.WriteLog(korsel_id, "Stopper synkroniseringen, da jobbet er annulleret udefra", cnt & " af " & dt.Rows.Count & " hold blev synkroniseret")
+                    Exit For
+                End If
             End If
         Next
 
@@ -165,6 +167,8 @@ Public Class Service1
 
     Function LoginIsValid(korsel_id As Integer) As Boolean
 
+        Console.WriteLine("Tjekker om session cookie er gyldig")
+
         Dim req As HttpWebRequest = DirectCast(HttpWebRequest.Create(help.config.url_test_login), HttpWebRequest)
         req.Headers.Add("cookie", help.config.jsession)
 
@@ -173,29 +177,7 @@ Public Class Service1
         If InStr(res.Headers.Get("Set-Cookie"), "JSESSIONIDSSO=REMOVE") > 0 Then
             help.WriteLog(korsel_id, "Session cookie er udløbet", "")
 
-            Dim cmd As String = "powershell -executionpolicy bypass ""C:\Uplus\login.ps1"""
-
-            Dim psi As New ProcessStartInfo("cmd.exe", cmd)
-            psi.UseShellExecute = False
-            psi.CreateNoWindow = True
-            'psi.WorkingDirectory = Application.StartupPath
-            psi.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
-            psi.RedirectStandardOutput = True
-            psi.RedirectStandardError = True
-            psi.Verb = "runas"
-
-            Dim p As New Process
-            p.StartInfo = psi
-            p.EnableRaisingEvents = True
-
-            AddHandler p.OutputDataReceived, AddressOf StdOut
-            AddHandler p.ErrorDataReceived, AddressOf StdOut
-
-            p.Start()
-            p.BeginOutputReadLine()
-            p.BeginErrorReadLine()
-
-            p.WaitForExit()
+            Process.Start("powershell", "-executionpolicy bypass -File ""C:\Uplus\login.ps1""")
 
             ' Vent 10 sekunder og prøv igen
             help.WriteLog(korsel_id, "Session cookie er hentet. Udsætter start med 10 sekunder", "")
@@ -203,6 +185,7 @@ Public Class Service1
 
             Return False
         Else
+            help.WriteLog(korsel_id, "Session cookie er gyldig", "")
             Return True
         End If
 

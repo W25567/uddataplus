@@ -36,50 +36,46 @@ Public Class Helper
         Return dt
     End Function
 
-    Public Function ApiLogin() As Boolean
-        Dim adresse As String = "https://all.uddataplus.dk/login/api/login/currentUser"
+    Public Function WebKlient(Optional login As Boolean = False) As WebClient
         Dim wc As New WebClient
         wc.Encoding = Encoding.UTF8
-        wc.Headers.Add("cookie", config.jsession)
-        wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) Gecko/20100101 Firefox/94.0")
+        If login Then
+            wc.Headers.Add("Host", "all.uddataplus.dk")
+            wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) Gecko/20100101 Firefox/94.0")
+            wc.Headers.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
+            wc.Headers.Add("Accept-Language", "da,en-US;q=0.7,en;q=0.3")
+            wc.Headers.Add("Accept-Encoding", "gzip, deflate, br")
+            wc.Headers.Add("Content-Type", "application/x-www-form-urlencoded")
+            'wc.Headers.Add("Content-Length", "72")
+            'wc.Headers.
+            wc.Headers.Add("Origin", "https://all.uddataplus.dk")
+            'wc.Headers.Add("Connection", "keep-alive")
+            wc.Headers.Add("Referer", "https://all.uddataplus.dk/")
+            wc.Headers.Add("Cookie", "usession=02977985D6C374125D324C73F387695B.default; instkey=64233665; instnr=621407; tab=direkte; cok=1; fguOverblikFilter32610={""ownFilter"":""alle"",""includeFormer"":false,""searchString"":""""}; usession=BE123D4BB5B8A6D319D3B1AB3C691913.default")
+            wc.Headers.Add("Upgrade-Insecure-Requests", "1")
+            wc.Headers.Add("Sec-Fetch-Dest", "document")
+            wc.Headers.Add("Sec-Fetch-Mode", "navigate")
+            wc.Headers.Add("Sec-Fetch-Site", "same-origin")
+            wc.Headers.Add("Sec-Fetch-User", "?1")
+            wc.Headers.Add("TE", "trailers")
 
-        wc.Headers.Add("Host", "all.uddataplus.dk")
-        'wc.Headers.Add("Accept", "application/json")
-        wc.Headers.Add("Accept-Language", "da, en - US;q=0.7, en;q=0.3")
-        wc.Headers.Add("Accept-Encoding", "gzip, deflate, br")
-        'wc.Headers.Add("Connection", "keep-alive")
-        wc.Headers.Add("Referer", "https://all.uddataplus.dk/react/uddadm/amukurser/")
-        wc.Headers.Add("Sec-Fetch-Dest", "Empty")
-        wc.Headers.Add("Sec-Fetch-Mode", "cors")
-        wc.Headers.Add("Sec-Fetch-Site", "same-origin")
-
-        Dim intChunkSize As Integer = 256
-
-        'Dim s As String = wc.DownloadString(adresse)
-        Dim b() As Byte = wc.DownloadData(adresse)
-        Dim gz As New GZip.GZipInputStream(New MemoryStream(b))
-        Dim intSizeRead As Integer
-        Dim unzipBytes(intChunkSize) As Byte
-        Dim OutputStream As New MemoryStream
-        While True
-            '-- this decompresses a chunk
-            '-- remember the output will be larger than the input (one would hope)
-            intSizeRead = gz.Read(unzipBytes, 0, intChunkSize)
-            If intSizeRead > 0 Then
-                OutputStream.Write(unzipBytes, 0, intSizeRead)
-            Else
-                Exit While
-            End If
-        End While
-        '-- convert our decompressed bytestream into a UTF-8 string
-        Dim s As String = System.Text.Encoding.UTF8.GetString(OutputStream.ToArray)
-        Console.WriteLine(s)
-
-        Return True
+        Else
+            wc.Headers.Add("cookie", config.jsession)
+            wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) Gecko/20100101 Firefox/94.0")
+            wc.Headers.Add("Host", "all.uddataplus.dk")
+            wc.Headers.Add("Accept", "application/json, text/plain, */*")
+            wc.Headers.Add("Accept-Language", "da, en - US;q=0.7, en;q=0.3")
+            wc.Headers.Add("Accept-Encoding", "gzip, deflate, br")
+            wc.Headers.Add("Referer", "https://all.uddataplus.dk/react/uddadm/amukurser/")
+            wc.Headers.Add("Sec-Fetch-Dest", "Empty")
+            wc.Headers.Add("Sec-Fetch-Mode", "cors")
+            wc.Headers.Add("Sec-Fetch-Site", "same-origin")
+        End If
+        Return wc
     End Function
 
     Public Function HentJson(url As Helper.url, Optional akti_id As String = "") As String
-        ' ApiLogin()
+
         Dim adresse As String = ""
         Select Case url
             Case url.login : adresse = config.url_login
@@ -94,38 +90,21 @@ Public Class Helper
         End Select
         Console.WriteLine(adresse)
 
-        Dim wc As New WebClient
-        wc.Encoding = Encoding.UTF8
-        wc.Headers.Add("cookie", config.jsession)
-        wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) Gecko/20100101 Firefox/94.0")
+        Dim wc As WebClient = WebKlient()
 
-        wc.Headers.Add("Host", "all.uddataplus.dk")
-        wc.Headers.Add("Accept", "application/json, text/plain, */*")
-        wc.Headers.Add("Accept-Language", "da, en - US;q=0.7, en;q=0.3")
-        wc.Headers.Add("Accept-Encoding", "gzip, deflate, br")
-        'wc.Headers.Add("Connection", "keep-alive")
-        wc.Headers.Add("Referer", "https://all.uddataplus.dk/react/uddadm/amukurser/")
-        wc.Headers.Add("Sec-Fetch-Dest", "Empty")
-        wc.Headers.Add("Sec-Fetch-Mode", "cors")
-        wc.Headers.Add("Sec-Fetch-Site", "same-origin")
-
-        'Dim s As String = wc.DownloadString(adresse)
         Console.WriteLine(config.jsession)
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+
         Dim b() As Byte = wc.DownloadData(adresse)
-        'Console.WriteLine(s)
-        Dim s As String = ""
+        Dim s As String
         Try
             Dim intChunkSize As Integer = 4096
-
-            'Dim s As String = wc.DownloadString(adresse)
-            'Dim b() As Byte = wc.DownloadData(adresse)
             Dim gz As New GZip.GZipInputStream(New MemoryStream(b))
             Dim intSizeRead As Integer
             Dim unzipBytes(intChunkSize) As Byte
             Dim OutputStream As New MemoryStream
+
             While True
-                '-- this decompresses a chunk
-                '-- remember the output will be larger than the input (one would hope)
                 intSizeRead = gz.Read(unzipBytes, 0, intChunkSize)
                 If intSizeRead > 0 Then
                     OutputStream.Write(unzipBytes, 0, intSizeRead)
@@ -133,16 +112,13 @@ Public Class Helper
                     Exit While
                 End If
             End While
-            '-- convert our decompressed bytestream into a UTF-8 string
+
             s = System.Text.Encoding.UTF8.GetString(OutputStream.ToArray)
         Catch ex As Exception
             s = Encoding.Default.GetString(b)
             Console.WriteLine("Bruge råt format")
         End Try
 
-        'Console.WriteLine(s)
-
-        'Console.WriteLine(s)
         Return s
     End Function
 
