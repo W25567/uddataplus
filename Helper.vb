@@ -5,6 +5,11 @@ Imports System.IO
 
 Public Class Helper
 
+    Public korsel_id As Integer
+    Public Sub New(Optional korsel_id As Integer = 0)
+        Me.korsel_id = korsel_id
+    End Sub
+
     Public Enum url
         login = 1
         holdliste = 2
@@ -74,6 +79,88 @@ Public Class Helper
         Return wc
     End Function
 
+    Public Function HentFil(url As Helper.url, Optional akti_id As String = "") As String
+
+        Dim adresse As String = "", filnavn As String = ""
+        Select Case url
+            Case url.login : adresse = config.url_login
+            Case url.holdliste
+                Dim start As Date = DateAdd(DateInterval.Day, (config.start_antal_dage * -1), Now)
+                Dim slut As Date = DateAdd(DateInterval.Month, config.slut_antal_mdr, start)
+                adresse = config.url_holdliste.Replace("[start]", FormatDato(start)).Replace("[slut]", FormatDato(slut))
+                filnavn = "holdliste"
+            Case url.hold
+                adresse = config.url_hold.Replace("[akti_id]", akti_id)
+                filnavn = "hold" & akti_id
+            Case url.tilstededage
+                adresse = config.url_tilstededage.Replace("[akti_id]", akti_id)
+                filnavn = "tilstededage" & akti_id
+            Case url.test_login : adresse = config.url_test_login
+            Case url.skoledage
+                adresse = config.url_skoledage.Replace("[skka_id]", akti_id)
+                filnavn = "skoledage"
+        End Select
+        Console.WriteLine(adresse)
+
+
+        ' TODO: hent fra indstillinger
+        Dim storage As String = "C:\Uplus\"
+        Dim data As String = Path.Combine(storage, "data")
+        filnavn = Path.Combine(data, filnavn)
+        Dim curl As String = File.ReadAllText(Path.Combine(storage, "curl.txt"))
+        curl = curl.Replace("[URL]", adresse)
+        curl = curl.Replace("[JSESSION]", config.jsession)
+        curl = curl + " --output """ + filnavn + """"
+
+        Console.WriteLine("CURL: " + curl)
+
+        Dim ps As New System.Diagnostics.Process
+        Dim si As New System.Diagnostics.ProcessStartInfo
+
+        si.RedirectStandardError = True
+        si.UseShellExecute = False
+        si.FileName = "cmd"
+        si.Arguments = "cmd /c " + curl
+
+        ps = Process.Start(si)
+        ps.WaitForExit()
+        Console.WriteLine(ps.ExitCode)
+
+        ps.Close()
+
+        Dim ms As New MemoryStream
+        Using fs As FileStream = New FileStream(filnavn, FileMode.Open, FileAccess.Read)
+            fs.CopyTo(ms)
+        End Using
+
+        Dim s As String
+        Try
+            Dim intChunkSize As Integer = 4096
+            Dim gz As New GZip.GZipInputStream(New MemoryStream(ms.ToArray))
+            Dim intSizeRead As Integer
+            Dim unzipBytes(intChunkSize) As Byte
+            Dim OutputStream As New MemoryStream
+
+            While True
+                intSizeRead = gz.Read(unzipBytes, 0, intChunkSize)
+                If intSizeRead > 0 Then
+                    OutputStream.Write(unzipBytes, 0, intSizeRead)
+                Else
+                    Exit While
+                End If
+            End While
+
+            s = System.Text.Encoding.UTF8.GetString(OutputStream.ToArray)
+        Catch ex As Exception
+            s = Encoding.Default.GetString(ms.ToArray)
+            Console.WriteLine("Bruge råt format")
+        End Try
+
+        ms.Close()
+        Return s
+
+    End Function
+
     Public Function HentJson(url As Helper.url, Optional akti_id As String = "") As String
 
         Dim adresse As String = ""
@@ -90,12 +177,32 @@ Public Class Helper
         End Select
         Console.WriteLine(adresse)
 
-        Dim wc As WebClient = WebKlient()
+
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+
+        Dim req As HttpWebRequest = DirectCast(HttpWebRequest.Create(adresse), HttpWebRequest)
+        req.Headers.Add("cookie", config.jsession)
+
+        Dim wc As HttpWebResponse = DirectCast(req.GetResponse(), HttpWebResponse)
+        'Dim wc As WebClient = WebKlient()
 
         Console.WriteLine(config.jsession)
         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
-
-        Dim b() As Byte = wc.DownloadData(adresse)
+        Dim b() As Byte
+        Try
+            Dim ms As New MemoryStream
+            wc.GetResponseStream().CopyTo(ms)
+            b = ms.ToArray
+        Catch ex As Exception
+            If ex.Message = "The operation has timed out" Then
+                WriteLog(Me.korsel_id, "Fik ikke svar inden for tidsrummet. Prøver en ekstra gang", "")
+                Dim wc2 As WebClient = WebKlient()
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+                b = wc2.DownloadData(adresse)
+            Else
+                Throw ex
+            End If
+        End Try
         Dim s As String
         Try
             Dim intChunkSize As Integer = 4096
