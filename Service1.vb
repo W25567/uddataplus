@@ -1,5 +1,8 @@
 ﻿Imports System.Net
 Imports System.Data.SqlClient
+Imports System.IO
+Imports ICSharpCode.SharpZipLib
+Imports System.Text
 
 Public Class Service1
     Public Sub OnDebug()
@@ -11,6 +14,42 @@ Public Class Service1
 
     Public ticker As New Timers.Timer
 
+    Sub udpak()
+        Dim ms As New MemoryStream
+        Using fs As FileStream = New FileStream("C:\Uplus\data\hold15812", FileMode.Open, FileAccess.Read)
+            fs.CopyTo(ms)
+        End Using
+
+        Dim s As String
+        Try
+            Dim intChunkSize As Integer = 4096
+            Dim gz As New GZip.GZipInputStream(New MemoryStream(ms.ToArray))
+            Dim intSizeRead As Integer
+            Dim unzipBytes(intChunkSize) As Byte
+            Dim OutputStream As New MemoryStream
+
+            While True
+                intSizeRead = gz.Read(unzipBytes, 0, intChunkSize)
+                If intSizeRead > 0 Then
+                    OutputStream.Write(unzipBytes, 0, intSizeRead)
+                Else
+                    Exit While
+                End If
+            End While
+
+            s = System.Text.Encoding.UTF8.GetString(OutputStream.ToArray)
+        Catch ex As Exception
+            s = Encoding.Default.GetString(ms.ToArray)
+            Console.WriteLine("Bruge råt format")
+        End Try
+
+        ms.Close()
+
+        File.WriteAllText("C:\Uplus\hold15812.json", s)
+
+    End Sub
+
+
     Protected Overrides Sub OnStart(ByVal args() As String)
 
         help.WriteStatus("Starter service...")
@@ -18,8 +57,9 @@ Public Class Service1
         ticker.Enabled = True
 
         AddHandler ticker.Elapsed, AddressOf Startkontrol
-        ticker.Start()
 
+        ticker.Start()
+        'udpak()
     End Sub
 
     Protected Overrides Sub OnStop()
@@ -136,8 +176,13 @@ Public Class Service1
         For Each row As DataRow In dt.Rows
             cnt += 1
             chk += 1
-            DownloadHold(row("akti_id"), dt.Rows.Count, cnt)
-            DownloadTilstededage(row("akti_id"))
+
+            If DownloadHold(korsel_id, row("akti_id"), dt.Rows.Count, cnt) And DownloadTilstededage(korsel_id, row("akti_id")) Then
+                Dim p As New SqlClient.SqlParameter("@akti_id", SqlDbType.Int) With {
+                    .Value = row("akti_id")
+                }
+                help.ExecQuery("EXEC sync_ok @akti_id", p)
+            End If
 
             If chk > 10 Then
                 If help.HentData("EXEC get_korselsstatus @KORSEL_ID", New SqlParameter("@KORSEL_ID", korsel_id)).Rows(0)(0) = 1 Then
@@ -151,6 +196,9 @@ Public Class Service1
             System.Threading.Thread.Sleep(help.config.sleep)
 
         Next
+
+        ' TODO: Extend housekeeping and try statements with log error and follow up
+        help.ExecQuery("EXEC sync_housekeeping @korsel_id", New SqlClient.SqlParameter("@korsel_id", korsel_id))
 
     End Sub
 
@@ -171,8 +219,8 @@ Public Class Service1
             tjekcnt += 1
             Try
 
-                DownloadHold(row("akti_id"), dt.Rows.Count, cnt)
-                DownloadTilstededage(row("akti_id"))
+                'DownloadHold(row("akti_id"), dt.Rows.Count, cnt)
+                'DownloadTilstededage(row("akti_id"))
 
                 ' Fjern sync anmodningen
                 Dim par As New SqlClient.SqlParameter("@akti_id", SqlDbType.Int)
@@ -200,24 +248,37 @@ Public Class Service1
 
     End Sub
 
-    Sub DownloadHold(akti_id As Integer, antal As Integer, cnt As Integer)
+    Function DownloadHold(korsel_id As Integer, akti_id As Integer, antal As Integer, cnt As Integer) As Boolean
 
-        Console.WriteLine("Downloader hold " & akti_id & "(" & cnt & " / " & antal & ")")
+        Console.WriteLine("Downloader hold " & akti_id & " (" & cnt & " / " & antal & ")")
 
-        ' Hent json
-        Dim json As String = help.HentFil(Helper.url.hold, akti_id)
+        Try
+            ' Hent json
+            Dim json As String = help.HentFil(Helper.url.hold, akti_id)
 
-        ' Sync maps
-        If firstRun Then help.SendJson("EXEC sync_maps @json", json) : firstRun = False
+            ' Sync maps
+            If firstRun Then help.SendJson("EXEC sync_maps @json", json) : firstRun = False
 
-        ' Send detaltjer
-        help.SendJson("EXEC sync_detaljer @akti_id, @json", akti_id, json)
+            ' Send detaltjer
+            help.SendJson("EXEC sync_detaljer @akti_id, @json", akti_id, json)
 
-    End Sub
+            Return True
+        Catch ex As Exception
+            help.WriteLog(korsel_id, "Hold: " & akti_id & " - " & ex.Message, If((ex.StackTrace = ""), ex.Message, ex.StackTrace))
+            Return False
+        End Try
 
-    Sub DownloadTilstededage(akti_id As Integer)
-        help.SendJson("EXEC sync_tilstededage2 @akti_id, @json", akti_id, help.HentFil(Helper.url.tilstededage, akti_id))
-    End Sub
+    End Function
+
+    Function DownloadTilstededage(korsel_id As Integer, akti_id As Integer) As Boolean
+        Try
+            help.SendJson("EXEC sync_tilstededage2 @akti_id, @json", akti_id, help.HentFil(Helper.url.tilstededage, akti_id))
+            Return True
+        Catch ex As Exception
+            help.WriteLog(korsel_id, "Hold: " & akti_id & " - " & ex.Message, If((ex.StackTrace = ""), ex.Message, ex.StackTrace))
+            Return False
+        End Try
+    End Function
 
     Function LoginIsValid(korsel_id As Integer) As Boolean
 

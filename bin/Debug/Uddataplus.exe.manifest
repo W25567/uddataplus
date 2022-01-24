@@ -54,14 +54,14 @@
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="Uddataplus.exe" size="31664">
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="Uddataplus.exe" size="32688">
       <assemblyIdentity name="Uddataplus" version="1.0.0.0" language="neutral" processorArchitecture="msil" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>tHaTjuReMydQdy23HjbrMNsBDHMRaiCzdxi0+W9bV74=</dsig:DigestValue>
+        <dsig:DigestValue>a2aFlKhu9Gmjsesr36SMHFPmelK7dNiiSWoJVdB09sc=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>

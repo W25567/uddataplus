@@ -97,6 +97,7 @@ Public Class Helper
                 filnavn = "tilstededage" & akti_id
             Case url.test_login : adresse = config.url_test_login
             Case url.skoledage
+                ' TODO: THIS IS WRONG!!
                 adresse = config.url_skoledage.Replace("[skka_id]", akti_id)
                 filnavn = "skoledage"
         End Select
@@ -124,9 +125,11 @@ Public Class Helper
 
         ps = Process.Start(si)
         ps.WaitForExit()
-        Console.WriteLine(ps.ExitCode)
+        Dim ec As String = ps.ExitCode
 
         ps.Close()
+
+        If Not ec = "0" Then Throw New Exception("Exitcode was not zero (" + ec + "). Retry")
 
         Dim ms As New MemoryStream
         Using fs As FileStream = New FileStream(filnavn, FileMode.Open, FileAccess.Read)
